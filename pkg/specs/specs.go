@@ -67,8 +67,8 @@ func Parse(specs []string) (Specs, error) {
 				"^%s$",
 				strings.Replace(oldValue, "*", "(.*)", 1),
 			)),
-			NewKey:   strings.Replace(newKey, "*", "$1", 1),
-			NewValue: strings.Replace(newValue, "*", "$1", 1),
+			NewKey:   newKey,
+			NewValue: newValue,
 		})
 	}
 	logrus.WithField("specs", parsedSpecs).Debug("Parsed specs from command line")
@@ -78,24 +78,31 @@ func Parse(specs []string) (Specs, error) {
 // ApplyTo applies relabeling operations to a set of labels. Returns a map with
 // changes to apply to the labels.
 func (s Specs) ApplyTo(labels map[string]string) map[string]string {
-	var replacements map[string]string
+	replacements := map[string]string{}
 
 	for key, value := range labels {
 		for _, spec := range s {
-			if spec.OldKey.MatchString(key) && spec.OldValue.MatchString(value) {
-				var newKey, newValue string
-				if spec.OldKey.NumSubexp() > 0 {
-					newKey = spec.OldKey.ReplaceAllString(key, spec.NewKey)
-					newValue = spec.OldKey.ReplaceAllString(value, spec.NewValue)
-				} else if spec.OldValue.NumSubexp() > 0 {
-					newKey = spec.OldValue.ReplaceAllString(key, spec.NewKey)
-					newValue = spec.OldValue.ReplaceAllString(value, spec.NewValue)
-				} else {
-					newKey = spec.NewKey
-					newValue = spec.NewValue
-				}
-				replacements[newKey] = newValue
+			keyMatch := spec.OldKey.FindStringSubmatch(key)
+			if keyMatch == nil {
+				continue
 			}
+			valueMatch := spec.OldValue.FindStringSubmatch(value)
+			if valueMatch == nil {
+				continue
+			}
+			var newKey, newValue string
+			if spec.OldKey.NumSubexp() > 0 {
+				newKey = strings.Replace(spec.NewKey, "*", keyMatch[1], 1)
+				newValue = strings.Replace(spec.NewValue, "*", keyMatch[1], 1)
+			} else if spec.OldValue.NumSubexp() > 0 {
+				newKey = strings.Replace(spec.NewKey, "*", valueMatch[1], 1)
+				newValue = strings.Replace(spec.NewValue, "*", valueMatch[1], 1)
+
+			} else {
+				newKey = spec.NewKey
+				newValue = spec.NewValue
+			}
+			replacements[newKey] = newValue
 		}
 	}
 	return replacements

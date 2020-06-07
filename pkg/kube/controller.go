@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	specs "github.com/vladlosev/node-relabeler/pkg/specs"
+	"github.com/vladlosev/node-relabeler/pkg/specs"
 )
 
 // Controller is the class with the relabeling logic.

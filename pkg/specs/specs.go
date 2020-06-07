@@ -23,6 +23,9 @@ type Specs []spec
 // them.
 func Parse(specs []string) (Specs, error) {
 	parsedSpecs := make([]spec, 0, len(specs))
+	if len(specs) == 0 {
+		return nil, fmt.Errorf("At least one --relabel spec must be specified")
+	}
 	for _, stringSpec := range specs {
 		oldNew := strings.Split(stringSpec, ":")
 		if len(oldNew) != 2 {
@@ -48,16 +51,11 @@ func Parse(specs []string) (Specs, error) {
 				stringSpec,
 				"oldkey=oldvalue pair should contain no more than a single *")
 		}
-		if strings.Contains(newKey, "*") && strings.Contains(newValue, "*") {
-			return nil, newSpecParseError(
-				stringSpec,
-				"newkey=newvalue pair should contain no more than a single *")
-		}
 		if (strings.Contains(newKey, "*") || strings.Contains(newValue, "*")) &&
 			!(strings.Contains(oldKey, "*") || strings.Contains(oldValue, "*")) {
 			return nil, newSpecParseError(
 				stringSpec,
-				"Wildcard pattern can only appear in both old and new label")
+				"Wildcard pattern cannot appear in new label without appearing in the old one")
 		}
 
 		parsedSpecs = append(parsedSpecs, spec{

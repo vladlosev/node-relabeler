@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/vladlosev/node-relabeler/pkg/kube"
-	"github.com/vladlosev/node-relabeler/pkg/spec"
+	"github.com/vladlosev/node-relabeler/pkg/specs"
 )
 
-var specs []string = nil
+var relabelOptions []string = nil
 var logLevel string
 
 // NewWorkerCommand returns a new command that will keep relabeling nodes
@@ -26,10 +26,10 @@ func NewWorkerCommand() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringArrayVar(
-		&specs,
+		&relabelOptions,
 		"relabel",
 		[]string{},
-		"Replace specs in the form old/label=value:new/label=newvalue",
+		"Re-labeling specs in the form old/label=value:new/label=newvalue",
 	)
 	cmd.PersistentFlags().StringVar(
 		&logLevel,
@@ -56,7 +56,7 @@ func startRelabeler(cmd *cobra.Command, args []string) error {
 	}
 	logrus.SetLevel(logrusLevel)
 
-	parsedSpecs, err := spec.ParseSpecs(specs)
+	parsedSpecs, err := specs.Parse(relabelOptions)
 	if err != nil {
 		return err
 	}

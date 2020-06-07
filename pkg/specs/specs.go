@@ -1,4 +1,4 @@
-package spec
+package specs
 
 import (
 	"fmt"
@@ -9,17 +9,20 @@ import (
 )
 
 // Spec contains a parsed relabel spec, ready to apply to node labels.
-type Spec struct {
+type spec struct {
 	OldKey   *regexp.Regexp
 	OldValue *regexp.Regexp
 	NewKey   string
 	NewValue string
 }
 
-// ParseSpecs parses specs from the command line into format useful to apply
+// Specs keeps compiled relabeling specs and applies them.
+type Specs []spec
+
+// Parse parses specs from the command line into format useful to apply
 // them.
-func ParseSpecs(specs []string) ([]Spec, error) {
-	parsedSpecs := make([]Spec, 0, len(specs))
+func Parse(specs []string) (Specs, error) {
+	parsedSpecs := make([]spec, 0, len(specs))
 	for _, stringSpec := range specs {
 		oldNew := strings.Split(stringSpec, ":")
 		if len(oldNew) != 2 {
@@ -57,7 +60,7 @@ func ParseSpecs(specs []string) ([]Spec, error) {
 				"Wildcard pattern can only appear in both old and new label")
 		}
 
-		parsedSpecs = append(parsedSpecs, Spec{
+		parsedSpecs = append(parsedSpecs, spec{
 			OldKey: regexp.MustCompile(fmt.Sprintf(
 				"^%s$",
 				strings.Replace(oldKey, "*", "(.*)", 1),
@@ -72,6 +75,32 @@ func ParseSpecs(specs []string) ([]Spec, error) {
 	}
 	logrus.WithField("specs", parsedSpecs).Debug("Parsed specs from command line")
 	return parsedSpecs, nil
+}
+
+// ApplyTo applies relabeling operations to a set of labels. Returns a map with
+// changes to apply to the labels.
+func (s Specs) ApplyTo(labels map[string]string) map[string]string {
+	var replacements map[string]string
+
+	for key, value := range labels {
+		for _, spec := range s {
+			if spec.OldKey.MatchString(key) && spec.OldValue.MatchString(value) {
+				var newKey, newValue string
+				if spec.OldKey.NumSubexp() > 0 {
+					newKey = spec.OldKey.ReplaceAllString(key, spec.NewKey)
+					newValue = spec.OldKey.ReplaceAllString(value, spec.NewValue)
+				} else if spec.OldValue.NumSubexp() > 0 {
+					newKey = spec.OldValue.ReplaceAllString(key, spec.NewKey)
+					newValue = spec.OldValue.ReplaceAllString(value, spec.NewValue)
+				} else {
+					newKey = spec.NewKey
+					newValue = spec.NewValue
+				}
+				replacements[newKey] = newValue
+			}
+		}
+	}
+	return replacements
 }
 
 func newSpecParseError(spec string, message string) error {

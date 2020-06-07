@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/vladlosev/node-relabeler/pkg/spec"
+	specs "github.com/vladlosev/node-relabeler/pkg/specs"
 )
 
 // Controller is the class with the relabeling logic.
@@ -21,11 +21,11 @@ type Controller struct {
 	client          kubernetes.Interface
 	informerFactory informers.SharedInformerFactory
 	nodeInformer    informers_core_v1.NodeInformer
-	specs           []spec.Spec
+	specs           specs.Specs
 }
 
 // NewController constructs new instance of Controller.
-func NewController(client kubernetes.Interface, specs []spec.Spec) (*Controller, error) {
+func NewController(client kubernetes.Interface, specs specs.Specs) (*Controller, error) {
 	informerFactory := informers.NewSharedInformerFactory(client, time.Hour*24)
 	controller := &Controller{
 		client:          client,
@@ -63,26 +63,8 @@ func (c *Controller) updateNode(oldObj interface{}, newObj interface{}) {
 	}
 	logrus.WithField("name", node.Name).Info("Received node update")
 
-	replacements := map[string]string{}
+	replacements := c.specs.ApplyTo(node.Labels)
 
-	for key, value := range node.Labels {
-		for _, spec := range c.specs {
-			if spec.OldKey.MatchString(key) && spec.OldValue.MatchString(value) {
-				var newKey, newValue string
-				if spec.OldKey.NumSubexp() > 0 {
-					newKey = spec.OldKey.ReplaceAllString(key, spec.NewKey)
-					newValue = spec.OldKey.ReplaceAllString(value, spec.NewValue)
-				} else if spec.OldValue.NumSubexp() > 0 {
-					newKey = spec.OldValue.ReplaceAllString(key, spec.NewKey)
-					newValue = spec.OldValue.ReplaceAllString(value, spec.NewValue)
-				} else {
-					newKey = spec.NewKey
-					newValue = spec.NewValue
-				}
-				replacements[newKey] = newValue
-			}
-		}
-	}
 	updated := false
 	for key, value := range replacements {
 		if oldValue, ok := node.Labels[key]; !ok || value != oldValue {

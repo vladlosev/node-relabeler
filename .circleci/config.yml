@@ -56,9 +56,9 @@ jobs:
       - build_image:
           tag: $CIRCLE_SHA1
       - save_cache:
-        key: go-cache-{{ arch }}-{{ checksum "go.sum" }}
-        paths:
-        - /go
+          key: go-cache-{{ arch }}-{{ checksum "go.sum" }}
+          paths:
+          - /go
   push_master_image:
     executor: default
     steps:
@@ -70,9 +70,9 @@ jobs:
       - push_image:
           tag: master-$CIRCLE_SHA1
       - save_cache:
-        key: go-cache-{{ arch }}-{{ checksum "go.sum" }}
-        paths:
-        - /go
+          key: go-cache-{{ arch }}-{{ checksum "go.sum" }}
+          paths:
+          - /go
   push_release_image:
     executor: default
     steps:

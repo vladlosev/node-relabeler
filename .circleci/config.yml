@@ -21,7 +21,7 @@ executors:
 commands:
   setup:
     steps:
-    - run: mkdir /home/circleci/project && cd /home/circleci/project
+    - run: mkdir -p /home/circleci/project && cd /home/circleci/project
     - checkout
     - setup_remote_docker
     - restore_cache:

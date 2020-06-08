@@ -33,7 +33,7 @@ commands:
   docker_login:
     steps:
     - run: docker login --username="$DOCKER_USER" --password="$DOCKER_PASSWORD"
-  buld_image:
+  build_image:
     parameters:
       tag:
         type: string

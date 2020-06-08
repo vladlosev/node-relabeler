@@ -1,9 +1,10 @@
 # Golang CircleCI 2.0 configuration file
 #
 # Check https://circleci.com/docs/2.0/language-go/ for more details
-version: 2
-jobs:
-  build:
+version: 2.1
+
+executors:
+  default:
     docker:
       # specify the version
       - image: circleci/golang:1.14
@@ -18,8 +19,87 @@ jobs:
     ####   /go/src/github.com/circleci/go-tool
     ####   /go/src/bitbucket.org/circleci/go-tool
     working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
-    steps:
-      - checkout
 
-      # specify any bash command here prefixed with `run: `
+commands:
+  setup:
+    steps:
+    - checkout
+    - setup_remote_docker
+    - restore_cache:
+        keys:
+        - go-cache-{{ arch }}-{{ checksum "go.sum" }}
+  docker_login:
+    steps:
+    - run: docker login --username="$DOCKER_USER" --password="$DOCKER_PASSWORD"
+  build_image:
+    parameters:
+      tag:
+        type: string
+    steps:
+    - run: docker build --progress=plain --tag=docker.io/vladlosev/node-relabeler:<<parameters.tag>> .
+  push_image:
+    parameters:
+      tag:
+        type: string
+    steps:
+    - run: docker push docker.io/vladlosev/node-relabeler:$CIRCLE_SHA1
+
+jobs:
+  build_test:
+    executor: default
+    steps:
+      - setup
       - run: go test -v ./...
+      - run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o node-relabeler
+      - build_image:
+          tag: $CIRCLE_SHA1
+      - save_cache:
+          key: go-cache-{{ arch }}-{{ checksum "go.sum" }}
+          paths:
+          - /go
+  push_master_image:
+    executor: default
+    steps:
+      - setup
+      - run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o node-relabeler
+      - build_image:
+          tag: master-$CIRCLE_SHA1
+      - docker_login
+      - push_image:
+          tag: master-$CIRCLE_SHA1
+      - save_cache:
+          key: go-cache-{{ arch }}-{{ checksum "go.sum" }}
+          paths:
+          - /go
+  push_release_image:
+    executor: default
+    steps:
+      - setup
+      - run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o node-relabeler
+      - build_image:
+          tag: $CIRCLE_TAG
+      - docker_login
+      - push_image:
+          tag: $CIRCLE_TAG
+
+workflows:
+  build_and_deploy:
+    jobs:
+    - build_test:
+        filters:
+          tags:
+            only: /.*/
+    - push_master_image:
+        requires:
+        - build_test
+        filters:
+          branches:
+            only: master
+    - push_release_image:
+        requires:
+        - build_test
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /v[0-9]+(\.[0-9]+)*(-[a-z0-9]+)?/

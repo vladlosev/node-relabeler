@@ -97,7 +97,7 @@ workflows:
         filters:
           branches:
             only: master
-    - push_versioned_image:
+    - push_release_image:
         requires:
         - build_test
         filters:

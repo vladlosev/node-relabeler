@@ -89,12 +89,14 @@ workflows:
           tags:
             only: /.*/
     - push_master_image:
+        context: docker_hub
         requires:
         - build_test
         filters:
           branches:
             only: master
     - push_release_image:
+        context: docker_hub
         requires:
         - build_test
         filters:

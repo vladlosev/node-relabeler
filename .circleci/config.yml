@@ -41,7 +41,7 @@ commands:
       tag:
         type: string
     steps:
-    - run: docker push docker.io/vladlosev/node-relabeler:$CIRCLE_SHA1
+    - run: docker push docker.io/vladlosev/node-relabeler:<<parameters.tag>>
 
 jobs:
   build_test:

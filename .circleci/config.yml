@@ -26,7 +26,6 @@ commands:
     - checkout
     - setup_remote_docker:
         version: 18.09.03
-        docker_layer_caching: true
     - restore_cache:
         keys:
         - go-cache-{{ arch }}-{{ checksum "go.sum" }}

@@ -80,7 +80,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 				Labels: map[string]string{"abc": "def"},
 			}}
 			fakeClient := fake.NewSimpleClientset(node)
-			updateChan := make(chan struct{}, 1)
+			updateChan := make(chan struct{})
 			fakeClient.PrependReactor(
 				"update",
 				"nodes",
@@ -102,7 +102,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 			case <-updateChan:
 				// cache.WaitForCacheSync has the sync period of 100ms.
 				// We have to outwait that to make sure it syncs.
-				time.Sleep(125 * time.Millisecond)
+				time.Sleep(225 * time.Millisecond)
 				close(stopChan)
 				<-doneChan
 				updated, err := fakeClient.CoreV1().Nodes().Get(

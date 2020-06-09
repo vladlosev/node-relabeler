@@ -81,6 +81,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 			},
 		},
 	}
+
 	for _, testItem := range testData {
 		t.Run(testItem.name, func(t *testing.T) {
 			specs, err := specs.Parse(testItem.specs)
@@ -106,17 +107,20 @@ func TestControllerLabelUpdate(t *testing.T) {
 					return false, nil, nil
 				},
 			)
+
 			controller, err := NewController(fakeClient, specs)
 			require.NoError(t, err)
 			stopChan := make(chan struct{})
 			stopSyncChan := make(chan struct{})
 			doneChan := make(chan struct{})
+
 			go func(stop, stopSync <-chan struct{}, done chan<- struct{}) {
 				// We use runInternal here to avoid interupting the cache sync.
 				err = controller.runInternal(stop, stopSync)
 				assert.NoError(t, err)
 				close(done)
 			}(stopChan, stopSyncChan, doneChan)
+
 			select {
 			case <-updateChan:
 				close(stopChan)

@@ -17,10 +17,10 @@ import (
 
 func TestControllerLabelUpdate(t *testing.T) {
 	testData := []struct {
-		name      string
-		specs     []string
-		labels    map[string]string
-		validator func(t *testing.T, node *core_v1.Node)
+		name     string
+		specs    []string
+		labels   map[string]string
+		validate func(t *testing.T, node *core_v1.Node)
 	}{
 		{
 			"AddsNewLabel",
@@ -28,7 +28,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 			map[string]string{"abc": "def"},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "uvw")
-				assert.Equal(t, node.Labels["uvw"], "xyz")
+				assert.Equal(t, "xyz", node.Labels["uvw"])
 				assert.Len(t, node.Labels, 2)
 			},
 		},
@@ -38,17 +38,27 @@ func TestControllerLabelUpdate(t *testing.T) {
 			map[string]string{"abc": "def"},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "abc")
-				assert.Equal(t, node.Labels["abc"], "xyz")
+				assert.Equal(t, "xyz", node.Labels["abc"])
 				assert.Len(t, node.Labels, 1)
 			},
 		},
 		{
-			"ModifiesExistingLabelWithWildcard",
+			"AddsNewLabelWithWildcard",
 			[]string{"abc=*:def*=x"},
 			map[string]string{"abc": "123"},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "def123")
-				assert.Equal(t, node.Labels["def123"], "x")
+				assert.Equal(t, "x", node.Labels["def123"])
+				assert.Len(t, node.Labels, 2)
+			},
+		},
+		{
+			"ModifiesExistingLabelWithWildcard",
+			[]string{"abc=a*:abc=b*"},
+			map[string]string{"abc": "a123"},
+			func(t *testing.T, node *core_v1.Node) {
+				require.Contains(t, node.Labels, "abc")
+				assert.Equal(t, "b123", node.Labels["abc"])
 				assert.Len(t, node.Labels, 1)
 			},
 		},
@@ -64,20 +74,20 @@ func TestControllerLabelUpdate(t *testing.T) {
 			},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "def")
-				assert.Equal(t, node.Labels["def"], "123")
+				assert.Equal(t, "123", node.Labels["def"])
 				require.Contains(t, node.Labels, "uvw")
-				assert.Equal(t, node.Labels["uvw"], "ABC")
-				assert.Len(t, node.Labels, 1)
+				assert.Equal(t, "ABC", node.Labels["uvw"])
+				assert.Len(t, node.Labels, 3)
 			},
 		},
 	}
 	for _, testItem := range testData {
 		t.Run(testItem.name, func(t *testing.T) {
-			specs, err := specs.Parse([]string{"abc=def:uvw=xyz"})
+			specs, err := specs.Parse(testItem.specs)
 			require.NoError(t, err)
 			node := &core_v1.Node{ObjectMeta: meta_v1.ObjectMeta{
-				Name:   "test-node",
-				Labels: map[string]string{"abc": "def"},
+				Name:   "test-node-" + testItem.name,
+				Labels: testItem.labels,
 			}}
 			fakeClient := fake.NewSimpleClientset(node)
 			updateChan := make(chan struct{})
@@ -85,21 +95,28 @@ func TestControllerLabelUpdate(t *testing.T) {
 				"update",
 				"nodes",
 				func(action go_testing.Action) (bool, runtime.Object, error) {
-					close(updateChan)
+					// Make sure we don't close updateChan more than once when multiple
+					// updates arrive.
+					select {
+					case <-updateChan:
+						break
+					default:
+						close(updateChan)
+					}
 					return false, nil, nil
 				},
 			)
 			controller, err := NewController(fakeClient, specs)
 			require.NoError(t, err)
 			stopChan := make(chan struct{})
-			stopCacheSyncChan := make(chan struct{})
+			stopSyncChan := make(chan struct{})
 			doneChan := make(chan struct{})
-			go func(stop <-chan struct{}, done chan<- struct{}) {
+			go func(stop, stopSync <-chan struct{}, done chan<- struct{}) {
 				// We use runInternal here to avoid interupting the cache sync.
-				err = controller.runInternal(stopChan, stopCacheSyncChan)
+				err = controller.runInternal(stop, stopSync)
 				assert.NoError(t, err)
 				close(done)
-			}(stopChan, doneChan)
+			}(stopChan, stopSyncChan, doneChan)
 			select {
 			case <-updateChan:
 				close(stopChan)
@@ -110,11 +127,11 @@ func TestControllerLabelUpdate(t *testing.T) {
 					meta_v1.GetOptions{},
 				)
 				require.NoError(t, err)
-				require.Contains(t, updated.Labels, "uvw")
-				assert.Equal(t, updated.Labels["uvw"], "xyz")
+				testItem.validate(t, updated)
 				break
-			case <-time.After(1000 * time.Microsecond):
+			case <-time.After(1000 * time.Millisecond):
 				assert.Fail(t, "No expected node updates received")
+				close(stopSyncChan)
 				close(stopChan)
 				<-doneChan
 			}

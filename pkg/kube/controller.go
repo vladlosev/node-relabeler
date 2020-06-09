@@ -48,10 +48,13 @@ func (c *Controller) Run(stopCh <-chan struct{}, stopSyncCh <-chan struct{}) err
 }
 
 func (c *Controller) runInternal(stopCh <-chan struct{}, stopSyncCh <-chan struct{}) error {
+	logrus.Info("Starting informers...")
 	c.informerFactory.Start(stopCh)
+	logrus.Info("Syncing informer cache...")
 	if !cache.WaitForCacheSync(stopSyncCh, c.nodeInformer.Informer().HasSynced) {
 		return fmt.Errorf("Failed to sync node informer cache")
 	}
+	logrus.Info("Informer cache synced.")
 	<-stopCh
 	return nil
 }

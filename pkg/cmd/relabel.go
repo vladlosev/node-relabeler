@@ -79,5 +79,5 @@ func startRelabeler(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return controller.Run(stop)
+	return controller.Run(stop, stop)
 }

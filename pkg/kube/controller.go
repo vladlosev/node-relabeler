@@ -43,9 +43,13 @@ func NewController(client kubernetes.Interface, specs specs.Specs) (*Controller,
 }
 
 // Run runs the controller until the stop channel is signalled.
-func (c *Controller) Run(stopCh <-chan struct{}) error {
+func (c *Controller) Run(stopCh <-chan struct{}, stopSyncCh <-chan struct{}) error {
+	return c.runInternal(stopCh, stopCh)
+}
+
+func (c *Controller) runInternal(stopCh <-chan struct{}, stopSyncCh <-chan struct{}) error {
 	c.informerFactory.Start(stopCh)
-	if !cache.WaitForCacheSync(stopCh, c.nodeInformer.Informer().HasSynced) {
+	if !cache.WaitForCacheSync(stopSyncCh, c.nodeInformer.Informer().HasSynced) {
 		return fmt.Errorf("Failed to sync node informer cache")
 	}
 	<-stopCh

@@ -92,17 +92,16 @@ func TestControllerLabelUpdate(t *testing.T) {
 			controller, err := NewController(fakeClient, specs)
 			require.NoError(t, err)
 			stopChan := make(chan struct{})
+			stopCacheSyncChan := make(chan struct{})
 			doneChan := make(chan struct{})
 			go func(stop <-chan struct{}, done chan<- struct{}) {
-				err = controller.Run(stopChan)
+				// We use runInternal here to avoid interupting the cache sync.
+				err = controller.runInternal(stopChan, stopCacheSyncChan)
 				assert.NoError(t, err)
 				close(done)
 			}(stopChan, doneChan)
 			select {
 			case <-updateChan:
-				// cache.WaitForCacheSync has the sync period of 100ms.
-				// We have to outwait that to make sure it syncs.
-				time.Sleep(110 * time.Millisecond)
 				close(stopChan)
 				<-doneChan
 				updated, err := fakeClient.CoreV1().Nodes().Get(

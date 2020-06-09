@@ -28,7 +28,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 			map[string]string{"abc": "def"},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "uvw")
-				assert.Equal(t, node.Labels["uvw"], "xyz")
+				assert.Equal(t, "xyz", node.Labels["uvw"])
 				assert.Len(t, node.Labels, 2)
 			},
 		},
@@ -38,7 +38,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 			map[string]string{"abc": "def"},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "abc")
-				assert.Equal(t, node.Labels["abc"], "xyz")
+				assert.Equal(t, "xyz", node.Labels["abc"])
 				assert.Len(t, node.Labels, 1)
 			},
 		},
@@ -48,17 +48,17 @@ func TestControllerLabelUpdate(t *testing.T) {
 			map[string]string{"abc": "123"},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "def123")
-				assert.Equal(t, node.Labels["def123"], "x")
+				assert.Equal(t, "x", node.Labels["def123"])
 				assert.Len(t, node.Labels, 2)
 			},
 		},
 		{
 			"ModifiesExistingLabelWithWildcard",
-			[]string{"abc=*:abc=x*x"},
-			map[string]string{"abc": "123"},
+			[]string{"abc=a*:abc=b*"},
+			map[string]string{"abc": "a123"},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "abc")
-				assert.Equal(t, node.Labels["abc"], "x123x")
+				assert.Equal(t, "b123", node.Labels["abc"])
 				assert.Len(t, node.Labels, 1)
 			},
 		},
@@ -74,9 +74,9 @@ func TestControllerLabelUpdate(t *testing.T) {
 			},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "def")
-				assert.Equal(t, node.Labels["def"], "123")
+				assert.Equal(t, "123", node.Labels["def"])
 				require.Contains(t, node.Labels, "uvw")
-				assert.Equal(t, node.Labels["uvw"], "ABC")
+				assert.Equal(t, "ABC", node.Labels["uvw"])
 				assert.Len(t, node.Labels, 3)
 			},
 		},
@@ -86,7 +86,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 			specs, err := specs.Parse(testItem.specs)
 			require.NoError(t, err)
 			node := &core_v1.Node{ObjectMeta: meta_v1.ObjectMeta{
-				Name:   "test-node",
+				Name:   "test-node-" + testItem.name,
 				Labels: testItem.labels,
 			}}
 			fakeClient := fake.NewSimpleClientset(node)
@@ -109,14 +109,14 @@ func TestControllerLabelUpdate(t *testing.T) {
 			controller, err := NewController(fakeClient, specs)
 			require.NoError(t, err)
 			stopChan := make(chan struct{})
-			stopCacheSyncChan := make(chan struct{})
+			stopSyncChan := make(chan struct{})
 			doneChan := make(chan struct{})
-			go func(stop <-chan struct{}, done chan<- struct{}) {
+			go func(stop, stopSync <-chan struct{}, done chan<- struct{}) {
 				// We use runInternal here to avoid interupting the cache sync.
-				err = controller.runInternal(stopChan, stopCacheSyncChan)
+				err = controller.runInternal(stop, stopSync)
 				assert.NoError(t, err)
 				close(done)
-			}(stopChan, doneChan)
+			}(stopChan, stopSyncChan, doneChan)
 			select {
 			case <-updateChan:
 				close(stopChan)
@@ -129,8 +129,9 @@ func TestControllerLabelUpdate(t *testing.T) {
 				require.NoError(t, err)
 				testItem.validate(t, updated)
 				break
-			case <-time.After(1000 * time.Microsecond):
+			case <-time.After(1000 * time.Millisecond):
 				assert.Fail(t, "No expected node updates received")
+				close(stopSyncChan)
 				close(stopChan)
 				<-doneChan
 			}

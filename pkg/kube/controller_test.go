@@ -102,7 +102,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 			case <-updateChan:
 				// cache.WaitForCacheSync has the sync period of 100ms.
 				// We have to outwait that to make sure it syncs.
-				time.Sleep(110 * time.Millisecond)
+				time.Sleep(125 * time.Millisecond)
 				close(stopChan)
 				<-doneChan
 				updated, err := fakeClient.CoreV1().Nodes().Get(

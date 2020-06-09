@@ -80,7 +80,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 				Labels: map[string]string{"abc": "def"},
 			}}
 			fakeClient := fake.NewSimpleClientset(node)
-			updateChan := make(chan struct{})
+			updateChan := make(chan struct{}, 1)
 			fakeClient.PrependReactor(
 				"update",
 				"nodes",

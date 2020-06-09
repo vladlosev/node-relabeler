@@ -17,10 +17,10 @@ import (
 
 func TestControllerLabelUpdate(t *testing.T) {
 	testData := []struct {
-		name      string
-		specs     []string
-		labels    map[string]string
-		validator func(t *testing.T, node *core_v1.Node)
+		name     string
+		specs    []string
+		labels   map[string]string
+		validate func(t *testing.T, node *core_v1.Node)
 	}{
 		{
 			"AddsNewLabel",
@@ -127,7 +127,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 					meta_v1.GetOptions{},
 				)
 				require.NoError(t, err)
-				testItem.validator(t, updated)
+				testItem.validate(t, updated)
 				break
 			case <-time.After(1000 * time.Microsecond):
 				assert.Fail(t, "No expected node updates received")

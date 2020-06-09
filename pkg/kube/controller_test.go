@@ -43,12 +43,22 @@ func TestControllerLabelUpdate(t *testing.T) {
 			},
 		},
 		{
-			"ModifiesExistingLabelWithWildcard",
+			"AddsNewLabelWithWildcard",
 			[]string{"abc=*:def*=x"},
 			map[string]string{"abc": "123"},
 			func(t *testing.T, node *core_v1.Node) {
 				require.Contains(t, node.Labels, "def123")
 				assert.Equal(t, node.Labels["def123"], "x")
+				assert.Len(t, node.Labels, 2)
+			},
+		},
+		{
+			"ModifiesExistingLabelWithWildcard",
+			[]string{"abc=*:abc=x*x"},
+			map[string]string{"abc": "123"},
+			func(t *testing.T, node *core_v1.Node) {
+				require.Contains(t, node.Labels, "abc")
+				assert.Equal(t, node.Labels["abc"], "x123x")
 				assert.Len(t, node.Labels, 1)
 			},
 		},
@@ -67,17 +77,17 @@ func TestControllerLabelUpdate(t *testing.T) {
 				assert.Equal(t, node.Labels["def"], "123")
 				require.Contains(t, node.Labels, "uvw")
 				assert.Equal(t, node.Labels["uvw"], "ABC")
-				assert.Len(t, node.Labels, 1)
+				assert.Len(t, node.Labels, 3)
 			},
 		},
 	}
 	for _, testItem := range testData {
 		t.Run(testItem.name, func(t *testing.T) {
-			specs, err := specs.Parse([]string{"abc=def:uvw=xyz"})
+			specs, err := specs.Parse(testItem.specs)
 			require.NoError(t, err)
 			node := &core_v1.Node{ObjectMeta: meta_v1.ObjectMeta{
 				Name:   "test-node",
-				Labels: map[string]string{"abc": "def"},
+				Labels: testItem.labels,
 			}}
 			fakeClient := fake.NewSimpleClientset(node)
 			updateChan := make(chan struct{})
@@ -85,7 +95,14 @@ func TestControllerLabelUpdate(t *testing.T) {
 				"update",
 				"nodes",
 				func(action go_testing.Action) (bool, runtime.Object, error) {
-					close(updateChan)
+					// Make sure we don't close updateChan more than once when multiple
+					// updates arrive.
+					select {
+					case <-updateChan:
+						break
+					default:
+						close(updateChan)
+					}
 					return false, nil, nil
 				},
 			)
@@ -110,8 +127,7 @@ func TestControllerLabelUpdate(t *testing.T) {
 					meta_v1.GetOptions{},
 				)
 				require.NoError(t, err)
-				require.Contains(t, updated.Labels, "uvw")
-				assert.Equal(t, updated.Labels["uvw"], "xyz")
+				testItem.validator(t, updated)
 				break
 			case <-time.After(1000 * time.Microsecond):
 				assert.Fail(t, "No expected node updates received")

@@ -85,37 +85,60 @@ func TestParseOldValueOnlyWildcard(t *testing.T) {
 	assert.Equal(t, "xyz", specs[0].NewValue)
 }
 
-func TestParseEmptyFails(t *testing.T) {
-	_, err := Parse([]string{})
-	require.Error(t, err)
-	assert.Regexp(t, "At least one", err.Error())
-}
-
-func TestParseNewKeyWildcardFails(t *testing.T) {
-	_, err := Parse([]string{"abc=def:uvw*=xyz"})
-	require.Error(t, err)
-	assert.Regexp(
-		t,
-		"cannot appear in new label without appearing in the old one",
-		err.Error())
-}
-
-func TestParseNewValueWildcardFails(t *testing.T) {
-	_, err := Parse([]string{"abc=def:uvw=xyz*"})
-	require.Error(t, err)
-	assert.Regexp(
-		t,
-		"cannot appear in new label without appearing in the old one",
-		err.Error())
-}
-
-func TestParseOldKeyValueWildcardFails(t *testing.T) {
-	_, err := Parse([]string{"abc*=def*:uvw=xyz"})
-	require.Error(t, err)
-	assert.Regexp(
-		t,
-		"oldkey=oldvalue pair should contain no more than a single",
-		err.Error())
+func TestParseLabelSpecFailures(t *testing.T) {
+	testData := []struct {
+		name    string
+		specs   []string
+		message string
+	}{
+		{
+			"Empty",
+			[]string{},
+			"At least one",
+		},
+		{
+			"TooManyLabelSpecs",
+			[]string{"abcd=def:ghi=jkl:uvw=xyz:"},
+			"Specs must be in the form",
+		},
+		{
+			"NotEnoughLabelSpecs",
+			[]string{"uvw=xyz"},
+			"Specs must be in the form",
+		},
+		{
+			"OldLabelSpecTooManyParts",
+			[]string{"abc=def=hjk:uvw=xyz"},
+			"Specs must be in the form",
+		},
+		{
+			"NewLabelSpecTooManyParts",
+			[]string{"abc=def:uvw=xyz=123"},
+			"Specs must be in the form",
+		},
+		{
+			"NewKeyWildcardOnly",
+			[]string{"abc=def:uvw*=xyz"},
+			"cannot appear in new label without appearing in the old one",
+		},
+		{
+			"NewValueWildcardOnly",
+			[]string{"abc=def:uvw=xyz*"},
+			"cannot appear in new label without appearing in the old one",
+		},
+		{
+			"BothOldKeyAndValueWildcard",
+			[]string{"abc*=def*:uvw=xyz"},
+			"oldkey=oldvalue pair should contain no more than a single",
+		},
+	}
+	for _, testItem := range testData {
+		t.Run(testItem.name, func(t *testing.T) {
+			_, err := Parse(testItem.specs)
+			require.Error(t, err)
+			assert.Regexp(t, testItem.message, err.Error())
+		})
+	}
 }
 
 func TestApplyToSimpleEmpty(t *testing.T) {
@@ -125,10 +148,17 @@ func TestApplyToSimpleEmpty(t *testing.T) {
 	assert.Empty(t, results)
 }
 
-func TestApplyToSimpleMismatch(t *testing.T) {
+func TestApplyToSimpleKeyMismatch(t *testing.T) {
 	specs, err := Parse([]string{"abc=def:uvw=xyz"})
 	require.NoError(t, err)
 	results := specs.ApplyTo(map[string]string{"abd": "123"})
+	assert.Empty(t, results)
+}
+
+func TestApplyToSimpleValueMismatch(t *testing.T) {
+	specs, err := Parse([]string{"abc=def:uvw=xyz"})
+	require.NoError(t, err)
+	results := specs.ApplyTo(map[string]string{"abc": "123"})
 	assert.Empty(t, results)
 }
 

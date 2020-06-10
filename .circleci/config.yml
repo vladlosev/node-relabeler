@@ -3,6 +3,9 @@
 # Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2.1
 
+orbs:
+  helm: circleci/helm@0.2.3
+
 executors:
   default:
     docker:
@@ -21,6 +24,8 @@ executors:
 commands:
   setup:
     steps:
+    - helm/install-helm-client
+      version: v3.2.2
     - run: mkdir -p /home/circleci/project && cd /home/circleci/project
     - checkout
     - setup_remote_docker
@@ -50,6 +55,7 @@ jobs:
       - setup
       - run: go test -v ./...
       - run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o node-relabeler
+      - run: helm lint charts/node-relabeler
       - build_image:
           tag: $CIRCLE_SHA1
       - save_cache:

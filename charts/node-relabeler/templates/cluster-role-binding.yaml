@@ -1,0 +1,14 @@
+{{ if .Values.rbac }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "node-relabeler.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "node-relabeler.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "node-relabeler.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{ end }}

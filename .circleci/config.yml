@@ -26,7 +26,7 @@ commands:
     steps:
     - helm/install-helm-client:
         version: v3.2.2
-    - run: mkdir -p /home/circleci/project && cd /home/circleci/project
+    - run: mkdir -p /home/circleci/project && cd /home/circleci/project && rm -f get_helm.sh
     - checkout
     - setup_remote_docker
     - restore_cache:

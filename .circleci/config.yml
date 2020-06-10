@@ -53,9 +53,9 @@ jobs:
     executor: default
     steps:
       - setup
+      - run: helm lint charts/node-relabeler
       - run: go test -v ./...
       - run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o node-relabeler
-      - run: helm lint charts/node-relabeler
       - build_image:
           tag: $CIRCLE_SHA1
       - save_cache:

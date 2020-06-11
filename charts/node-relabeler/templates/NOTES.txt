@@ -1,3 +1,6 @@
 1. Get the application logs by running these commands:
 
-kubectl logs --namespace={{ .Release.Namespace }} --selector=app.kubernetes.io/name={{ include "node-relabeler.name" . }},app.kubernetes.io/instance={{ .Release.Name }}
+kubectl logs \
+  --namespace={{ .Release.Namespace }} \
+  --selector=app.kubernetes.io/name={{ include "node-relabeler.name" . }},app.kubernetes.io/instance={{ .Release.Name }} \
+  -f

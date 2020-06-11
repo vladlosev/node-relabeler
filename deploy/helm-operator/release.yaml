@@ -1,0 +1,14 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  namespace: system
+  name: node-relabeler
+spec:
+  releaseName: node-relabeler
+  chart:
+    git: https://github.com/vladlosev/node-relabeler.git
+    path: charts/node-relabeler
+  values:
+    relabelSpecs:
+    - find: role=*
+      set: node-role.kubernetes.io/*=

@@ -1,6 +1,6 @@
 # node-relabeler
 
-[![vladlosev](https://circleci.com/gh/vladlosev/node-labeler.svg?style=svg)](https://circleci.com/gh/vladlosev/node-relabeler)
+[![status](https://circleci.com/gh/vladlosev/node-labeler.svg?style=svg&circle-token=554c8fe05a9c7e23fd296cced1a15ce2e7541474)](https://circleci.com/gh/vladlosev/node-relabeler)
 
 ## About
 

@@ -11,78 +11,78 @@ func TestParseSimple(t *testing.T) {
 	specs, err := Parse([]string{"abc=def:uvw=xyz"})
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
-	assert.Equal(t, "^abc$", specs[0].OldKey.String())
-	assert.Equal(t, "^def$", specs[0].OldValue.String())
-	assert.Equal(t, "uvw", specs[0].NewKey)
-	assert.Equal(t, "xyz", specs[0].NewValue)
+	assert.Equal(t, "^abc$", specs[0].oldKeyRegexp.String())
+	assert.Equal(t, "^def$", specs[0].oldValueRegexp.String())
+	assert.Equal(t, "uvw", specs[0].newKey)
+	assert.Equal(t, "xyz", specs[0].newValue)
 }
 
 func TestParseKeyWildcard(t *testing.T) {
 	specs, err := Parse([]string{"abc*=def:uvw*=xyz"})
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
-	assert.Equal(t, "^abc(.*)$", specs[0].OldKey.String())
-	assert.Equal(t, "^def$", specs[0].OldValue.String())
-	assert.Equal(t, "uvw*", specs[0].NewKey)
-	assert.Equal(t, "xyz", specs[0].NewValue)
+	assert.Equal(t, "^abc(.*)$", specs[0].oldKeyRegexp.String())
+	assert.Equal(t, "^def$", specs[0].oldValueRegexp.String())
+	assert.Equal(t, "uvw*", specs[0].newKey)
+	assert.Equal(t, "xyz", specs[0].newValue)
 }
 
 func TestParseValueWildcard(t *testing.T) {
 	specs, err := Parse([]string{"abc=def*:uvw=xyz*"})
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
-	assert.Equal(t, "^abc$", specs[0].OldKey.String())
-	assert.Equal(t, "^def(.*)$", specs[0].OldValue.String())
-	assert.Equal(t, "uvw", specs[0].NewKey)
-	assert.Equal(t, "xyz*", specs[0].NewValue)
+	assert.Equal(t, "^abc$", specs[0].oldKeyRegexp.String())
+	assert.Equal(t, "^def(.*)$", specs[0].oldValueRegexp.String())
+	assert.Equal(t, "uvw", specs[0].newKey)
+	assert.Equal(t, "xyz*", specs[0].newValue)
 }
 
 func TestParseOldKeyNewValueWildcard(t *testing.T) {
 	specs, err := Parse([]string{"abc*=def:uvw=xyz*"})
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
-	assert.Equal(t, "^abc(.*)$", specs[0].OldKey.String())
-	assert.Equal(t, "^def$", specs[0].OldValue.String())
-	assert.Equal(t, "uvw", specs[0].NewKey)
-	assert.Equal(t, "xyz*", specs[0].NewValue)
+	assert.Equal(t, "^abc(.*)$", specs[0].oldKeyRegexp.String())
+	assert.Equal(t, "^def$", specs[0].oldValueRegexp.String())
+	assert.Equal(t, "uvw", specs[0].newKey)
+	assert.Equal(t, "xyz*", specs[0].newValue)
 }
 
 func TestParseOldValueNewKeyWildcard(t *testing.T) {
 	specs, err := Parse([]string{"abc=def*:uvw*=xyz"})
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
-	assert.Equal(t, "^abc$", specs[0].OldKey.String())
-	assert.Equal(t, "^def(.*)$", specs[0].OldValue.String())
-	assert.Equal(t, "uvw*", specs[0].NewKey)
-	assert.Equal(t, "xyz", specs[0].NewValue)
+	assert.Equal(t, "^abc$", specs[0].oldKeyRegexp.String())
+	assert.Equal(t, "^def(.*)$", specs[0].oldValueRegexp.String())
+	assert.Equal(t, "uvw*", specs[0].newKey)
+	assert.Equal(t, "xyz", specs[0].newValue)
 }
 
 func TestParseOldValueNewKeyValueWildcard(t *testing.T) {
 	specs, err := Parse([]string{"abc=def*:uvw*=xyz*"})
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
-	assert.Equal(t, "^abc$", specs[0].OldKey.String())
-	assert.Equal(t, "^def(.*)$", specs[0].OldValue.String())
-	assert.Equal(t, "uvw*", specs[0].NewKey)
-	assert.Equal(t, "xyz*", specs[0].NewValue)
+	assert.Equal(t, "^abc$", specs[0].oldKeyRegexp.String())
+	assert.Equal(t, "^def(.*)$", specs[0].oldValueRegexp.String())
+	assert.Equal(t, "uvw*", specs[0].newKey)
+	assert.Equal(t, "xyz*", specs[0].newValue)
 }
 func TestParseOldKeyOnlyWildcard(t *testing.T) {
 	specs, err := Parse([]string{"abc*=def:uvw=xyz"})
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
-	assert.Equal(t, "^abc(.*)$", specs[0].OldKey.String())
-	assert.Equal(t, "^def$", specs[0].OldValue.String())
-	assert.Equal(t, "uvw", specs[0].NewKey)
-	assert.Equal(t, "xyz", specs[0].NewValue)
+	assert.Equal(t, "^abc(.*)$", specs[0].oldKeyRegexp.String())
+	assert.Equal(t, "^def$", specs[0].oldValueRegexp.String())
+	assert.Equal(t, "uvw", specs[0].newKey)
+	assert.Equal(t, "xyz", specs[0].newValue)
 }
 func TestParseOldValueOnlyWildcard(t *testing.T) {
 	specs, err := Parse([]string{"abc=def*:uvw=xyz"})
 	require.NoError(t, err)
 	require.Len(t, specs, 1)
-	assert.Equal(t, "^abc$", specs[0].OldKey.String())
-	assert.Equal(t, "^def(.*)$", specs[0].OldValue.String())
-	assert.Equal(t, "uvw", specs[0].NewKey)
-	assert.Equal(t, "xyz", specs[0].NewValue)
+	assert.Equal(t, "^abc$", specs[0].oldKeyRegexp.String())
+	assert.Equal(t, "^def(.*)$", specs[0].oldValueRegexp.String())
+	assert.Equal(t, "uvw", specs[0].newKey)
+	assert.Equal(t, "xyz", specs[0].newValue)
 }
 
 func TestParseLabelSpecFailures(t *testing.T) {
@@ -130,6 +130,16 @@ func TestParseLabelSpecFailures(t *testing.T) {
 			"BothOldKeyAndValueWildcard",
 			[]string{"abc*=def*:uvw=xyz"},
 			"oldkey=oldvalue pair should contain no more than a single",
+		},
+		{
+			"AutoRecursiveKeyWildcard",
+			[]string{"abc*=123:abcd*=123"},
+			"newkey=newvalue pair must not match pattern in oldkey=oldvalue",
+		},
+		{
+			"AutoRecursiveValueWildcard",
+			[]string{"abc=*:abc=*x"},
+			"newkey=newvalue pair must not match pattern in oldkey=oldvalue",
 		},
 	}
 	for _, testItem := range testData {

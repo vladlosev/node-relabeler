@@ -37,7 +37,7 @@ matched part of the old label.
 For example,
 - `--relabel=foo=*:bar=*` will add the label `bar` with the value of the
   existing label `foo`.
-- `--relable=role=*:node-role.kubernetes.io/*=` will add the label
+- `--relabel=role=*:node-role.kubernetes.io/*=` will add the label
   `node-role.kubernetes.io/<role>=` with the value of the existing label
   `role`.
 

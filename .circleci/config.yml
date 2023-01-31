@@ -4,13 +4,13 @@
 version: 2.1
 
 orbs:
-  helm: circleci/helm@0.2.3
+  helm: circleci/helm@2.0.1
 
 executors:
   default:
     docker:
       # specify the version
-      - image: circleci/golang:1.14
+      - image: circleci/golang:1.18
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -25,7 +25,7 @@ commands:
   setup:
     steps:
     - helm/install-helm-client:
-        version: v3.2.2
+        version: v3.11.0
     - run: mkdir -p /home/circleci/project && cd /home/circleci/project && rm -f get_helm.sh
     - checkout
     - setup_remote_docker

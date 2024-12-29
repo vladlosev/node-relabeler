@@ -10,7 +10,7 @@ executors:
   default:
     docker:
       # specify the version
-      - image: cimg/go:1.18
+      - image: cimg/go:1.23
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
